@@ -13,6 +13,7 @@ import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 
+import android.text.util.Linkify;
 import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
@@ -50,6 +51,8 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 // ETRI AI Open API 中 음성인식 API 사용
 public class MainActivity extends AppCompatActivity {
@@ -74,7 +77,7 @@ public class MainActivity extends AppCompatActivity {
                     textResult.setText(v);
                     buttonStart.setText("PUSH TO STOP");
                     break;
-                // 녹음이 정상적으로 x종료되었음(버튼 또는 ma time)
+                // 녹음이 정상적으로 종료되었음(버튼 또는 max time)
                 case 2:
                     textResult.setText(v);
                     buttonStart.setEnabled(false);
@@ -92,7 +95,7 @@ public class MainActivity extends AppCompatActivity {
                     break;
                 // 인식이 정상적으로 종료되었음 (thread내에서 exception포함)
                 case 5:
-                    textResult.setText(StringEscapeUtils.unescapeJava(result));
+                    //textResult.setText(StringEscapeUtils.unescapeJava(result));
                     buttonStart.setEnabled(true);
                     buttonStart.setText("PUSH TO START");
                     break;
@@ -322,6 +325,7 @@ public class MainActivity extends AppCompatActivity {
                     public void run(){
                         //txt파일로 저장
                         saveFile(responBody);
+                        hyperlink(responBody);
                     }
                 }, 0);
 
@@ -403,4 +407,22 @@ public class MainActivity extends AppCompatActivity {
             e.printStackTrace();
         }
     }
+
+    public void hyperlink(String text){
+
+        TextView tvLinkify = (TextView) findViewById(R.id.textResult);
+        tvLinkify.setText(text);
+        Linkify.TransformFilter mTransform = new Linkify.TransformFilter() {
+            @Override public String transformUrl(Matcher match, String url) {
+                return "";
+            }
+        };
+
+        String[] computerArr_KOR = DataSet.computer_dataSet_KOR;
+        for(int i=0; i<computerArr_KOR.length; i++){
+            Pattern pattern = Pattern.compile(computerArr_KOR[i]);
+            Linkify.addLinks(tvLinkify, pattern, "https://search.naver.com/search.naver?where=nexearch&sm=top_hty&fbm=1&ie=utf8&query="+pattern,null,mTransform);
+        }
+    }
+
 }
