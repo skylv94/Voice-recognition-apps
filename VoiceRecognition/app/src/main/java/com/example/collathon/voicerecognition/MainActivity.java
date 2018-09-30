@@ -3,23 +3,21 @@ package com.example.collathon.voicerecognition;
 import android.Manifest;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.os.Environment;
 import android.os.Handler;
+import android.os.Looper;
 import android.os.Message;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-//import android.util.Log;
 
 import android.util.Log;
-import android.view.inputmethod.EditorInfo;
-import android.view.KeyEvent;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
-import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.TextView;
 
@@ -39,13 +37,18 @@ import org.json.JSONObject;
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 
 // ETRI AI Open API 中 음성인식 API 사용
@@ -60,7 +63,7 @@ public class MainActivity extends AppCompatActivity {
     Spinner spinnerMode;
     String curMode;
     String result;
-    private final Handler handler = new Handler() {
+    private final Handler handler = new Handler(Looper.getMainLooper()) {
         @Override
         public synchronized void handleMessage(Message msg) {
             Bundle bd = msg.getData();
@@ -104,7 +107,8 @@ public class MainActivity extends AppCompatActivity {
     boolean forceStop = false;
     //체크할 권한 배열
     String[] permission_list = {
-            Manifest.permission.RECORD_AUDIO
+            Manifest.permission.RECORD_AUDIO,
+            Manifest.permission.WRITE_EXTERNAL_STORAGE
     };
 
     public static String readStream(InputStream in) throws IOException, JSONException {
@@ -295,7 +299,7 @@ public class MainActivity extends AppCompatActivity {
 
         URL url;
         Integer responseCode;
-        String responBody;
+        final String responBody;
         try {
             url = new URL(openApiURL);
             HttpURLConnection con = (HttpURLConnection) url.openConnection();
@@ -311,6 +315,16 @@ public class MainActivity extends AppCompatActivity {
             if (responseCode == 200) {
                 InputStream is = new BufferedInputStream(con.getInputStream());
                 responBody = readStream(is);
+
+                Handler handler = new Handler(Looper.getMainLooper());
+                handler.postDelayed(new Runnable() {
+                    @Override
+                    public void run(){
+                        //txt파일로 저장
+                        saveFile(responBody);
+                    }
+                }, 0);
+
                 return responBody;
             } else
                 return "ERROR: " + Integer.toString(responseCode);
@@ -356,5 +370,37 @@ public class MainActivity extends AppCompatActivity {
             //권한 동의 버튼 선택
         }
         return;
+    }
+
+    public void saveFile(String saveStr){
+        // directory 생성
+        File storeDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS), "VoiceRecognition");
+        // 일치하는 directory가 없으면 생성
+        if( !storeDir.exists() ) {
+            storeDir.mkdirs();
+            Log.i(TAG, "directory 생성 성공");
+        }
+
+        SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMdd-HH-mm-ss", Locale.KOREA);
+        Date date = new Date();
+        String fileName = "collathon"+formatter.format(date) + ".txt";
+
+        // txt 파일 생성
+        File saveFile = new File(storeDir.getPath() + File.separator + fileName);
+        if(saveFile == null){
+            Log.i(TAG, "Error at creating .txt file, check storage permissions :");
+            return;
+        }
+
+        try{
+            FileOutputStream fos = new FileOutputStream(saveFile);
+            fos.write(saveStr.getBytes());
+            fos.close();
+            Toast.makeText(this, "txt파일 저장에 성공했습니다.", Toast.LENGTH_SHORT).show();
+        } catch(IOException e){
+            Toast.makeText(this, "txt파일 저장에 실패했습니다.", Toast.LENGTH_SHORT).show();
+            Log.d(TAG, "txt파일 저장에 실패했습니다.");
+            e.printStackTrace();
+        }
     }
 }
