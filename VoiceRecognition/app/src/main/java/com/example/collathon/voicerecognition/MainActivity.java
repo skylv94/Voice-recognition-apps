@@ -74,7 +74,7 @@ public class MainActivity extends AppCompatActivity {
                     textResult.setText(v);
                     buttonStart.setText("PUSH TO STOP");
                     break;
-                // 녹음이 정상적으로 종료되었음(버튼 또는 max time)
+                // 녹음이 정상적으로 x종료되었음(버튼 또는 ma time)
                 case 2:
                     textResult.setText(v);
                     buttonStart.setEnabled(false);
