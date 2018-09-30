@@ -12,6 +12,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 //import android.util.Log;
 
+import android.util.Log;
 import android.view.inputmethod.EditorInfo;
 import android.view.KeyEvent;
 import android.view.View;
@@ -32,6 +33,8 @@ import android.util.Base64;
 import android.widget.Toast;
 
 import org.apache.commons.lang.StringEscapeUtils;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
@@ -48,6 +51,7 @@ import java.util.Map;
 // ETRI AI Open API 中 음성인식 API 사용
 public class MainActivity extends AppCompatActivity {
 
+    private static final String TAG = "MainActivity";
     public static final String PREFS_NAME = "prefs";
     private static final String MSG_KEY = "PUSH YOUR KEY";
     public final int MY_PERMISSIONS_REQUEST_READ_CONTACTS = 1;
@@ -103,14 +107,23 @@ public class MainActivity extends AppCompatActivity {
             Manifest.permission.RECORD_AUDIO
     };
 
-    public static String readStream(InputStream in) throws IOException {
+    public static String readStream(InputStream in) throws IOException, JSONException {
         StringBuilder sb = new StringBuilder();
-        BufferedReader r = new BufferedReader(new InputStreamReader(in), 1000);
-        for (String line = r.readLine(); line != null; line = r.readLine()) {
+        BufferedReader r = new BufferedReader(new InputStreamReader(in),1000);
+        for (String line = r.readLine(); line != null; line =r.readLine()){
             sb.append(line);
         }
         in.close();
-        return sb.toString();
+
+        String rec_data = sb.toString();
+        JSONObject jsonObject = new JSONObject(rec_data);
+        Log.i(TAG,"서버에서 받아온 DATA = "+rec_data);
+        jsonObject = jsonObject.getJSONObject("return_object");
+        Log.i(TAG,"서버에서 받아온 DATA -> JSONObject로 추출 = "+jsonObject.toString());
+        String resultText = jsonObject.getString("recognized");
+        Log.i(TAG,"서버에서 받아온 DATA -> String으로만 추출 = "+resultText);
+
+        return resultText;
     }
 
     public void SendMessage(String str, int id) {
